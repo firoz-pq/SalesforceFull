@@ -1,0 +1,104 @@
+/************************************************************************************************************************************************************
+Description: There was no historical description, comments started as aprt of GMS-11100
+GMS-11100 - 80: Establish auto sync process from Proposal to Opportunity for particular fields
+Trigger using this class - ?? 
+Test Coverage Class - 
+*************************************************************************************************************************************************************/
+
+
+public class SyncOpptyFromProposal {
+    
+    @InvocableMethod
+    public static void SyncOppty(List<Id> opptyIds){
+        system.debug('SyncOpptyFromProposal : The OpptyIds are ------'+opptyIds);
+        list<Opportunity> OpptysToSync = new list<Opportunity>{};
+        if (!test.isRunningTest())
+        {
+            OpptysToSync = [Select Id, Renewal_Confidence_Level__c,Renewal_Confidence_Level_Note__c, 
+                                          CloseDate,  Invoice_Status__c, Primary_Proposal_ID__c,Case__c, Forecast_Category_Custom__c,
+                                          StageName, (Select Apttus_Proposal__Opportunity__c,PQ_Renewal_Close_date__c, 
+                                                             Apttus_QPApprov__Approval_Status__c,PQ_Invoice_Status__c,Case_Id__c, PQ_Renewal_Forecast_Category__c,
+                                                             Apttus_Proposal__Approval_Stage__c, PQ_Late_Renewal_Confidence_Level__c, Quote_Type__c,
+                                                             PQ_Late_Renewal_Confidence_Level_Note__c, Id, 
+                                                             Opportunity_Sync_Status__c 
+                                                             from Apttus_Proposal__R00N70000001yUfDEAU__r
+                                                             ) from 
+                                          Opportunity where Id in :opptyIds];
+        }
+        else
+        {
+            OpptysToSync = [Select Id, Renewal_Confidence_Level__c,Renewal_Confidence_Level_Note__c, 
+                                          CloseDate,  Invoice_Status__c, Primary_Proposal_ID__c,Case__c, Forecast_Category_Custom__c,
+                                          StageName, (Select Apttus_Proposal__Opportunity__c,PQ_Renewal_Close_date__c, 
+                                                             Apttus_QPApprov__Approval_Status__c,PQ_Invoice_Status__c,Case_Id__c, PQ_Renewal_Forecast_Category__c,
+                                                             Apttus_Proposal__Approval_Stage__c, PQ_Late_Renewal_Confidence_Level__c, Quote_Type__c,
+                                                             PQ_Late_Renewal_Confidence_Level_Note__c, Id, 
+                                                             Opportunity_Sync_Status__c 
+                                                             from Apttus_Proposal__R00N70000001yUfDEAU__r
+                                                             ) from 
+                                          Opportunity where Id in :opptyIds];
+        }
+       system.debug('SyncOpptyFromProposal : The Size of Opptys is---'+OpptysToSync.size());
+        
+        for (integer i=0;i<OpptysToSync.size();i++)
+        {
+           system.debug('SyncOpptyFromProposal : The Oppty Id is---'+OpptysToSync[i].Id);
+           
+            
+         if(OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i] !=null){
+             
+             system.debug('Proposal ID is ---'+ OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].ID);
+             
+            if(OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].Apttus_QPApprov__Approval_Status__c == 'CX Processing' ){
+            	//GMS-11100 - 80 - added Primary proposal ID & case ID. Both will be populated in all the quote types
+            	system.debug('Primary Proposal ID block---'+OpptysToSync[i].Id);
+            	OpptysToSync[i].Primary_Proposal_ID__c = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].ID;
+            }
+            if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].Case_Id__c != null)
+            {
+                OpptysToSync[i].Case__c  = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].Case_Id__c;
+            }
+            
+            if(OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].Quote_Type__c != 'New' ){
+            
+                if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Renewal_Close_date__c != null)
+                {
+                    OpptysToSync[i].CloseDate = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Renewal_Close_date__c; 
+                }
+                if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].Opportunity_Sync_Status__c != null)
+                {
+                    OpptysToSync[i].StageName = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].Opportunity_Sync_Status__c; 
+                }
+                if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Late_Renewal_Confidence_Level__c != null)
+                {
+                    OpptysToSync[i].Renewal_Confidence_Level__c = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Late_Renewal_Confidence_Level__c;
+                }
+                if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Late_Renewal_Confidence_Level_Note__c != null)
+                {
+                    OpptysToSync[i].Renewal_Confidence_Level_Note__c = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Late_Renewal_Confidence_Level_Note__c;
+                }
+                /**
+                //05182016 - Added this if condition for GMS-7115 : New Fields For Forecasting/ACV Calculation Fix
+                 if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Renewal_Forecast_Value__c != null)
+                 {
+                   OpptysToSync[i].PQ_Renewal_Forecast_Value__c = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Renewal_Forecast_Value__c;
+                 } **/
+                
+                //GMS-11100 - 80 - added following fields                 
+                
+                if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Invoice_Status__c != null)
+                {
+                    OpptysToSync[i].Invoice_Status__c = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Invoice_Status__c;
+                }            
+                
+                if (OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Renewal_Forecast_Category__c != null)
+                {
+                    OpptysToSync[i].Forecast_Category_Custom__c = OpptysToSync[i].Apttus_Proposal__R00N70000001yUfDEAU__r[i].PQ_Renewal_Forecast_Category__c;
+                }
+          }
+         }
+        } 
+        update opptysToSync;       
+    }
+
+}
